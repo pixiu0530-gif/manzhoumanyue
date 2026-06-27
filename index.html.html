@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/zz168/Downloads/gemini-code-1782560827265.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>鼎娱集团满周满月系统</title>
+    <script src="./鼎娱集团满周满月系统_files/xlsx.full.min.js.下载"></script>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
+        #bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2422&auto=format&fit=crop') no-repeat center center; background-size: cover; z-index: -2; }
+        #canvas { position: fixed; top: 0; left: 0; z-index: -1; }
+        .container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; height: 350px; background: rgba(10, 15, 25, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 50, 50, 0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(0, 0, 0, 0.8); }
+        h2 { color: #ff3333; margin-bottom: 30px; font-size: 26px; }
+        .upload-area { width: 500px; height: 120px; border: 1px dashed #ff3333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #fff; transition: 0.3s; }
+        .upload-area:hover { background: rgba(255, 255, 255, 0.1); }
+        #status { margin-top: 25px; color: #bbb; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="canvas"></canvas>
+<div class="container">
+    <h2>鼎娱集团满周满月系统</h2>
+    <input type="file" id="upload" accept=".xlsx, .xls, .csv" style="display: none;">
+    <div class="upload-area" onclick="document.getElementById(&#39;upload&#39;).click()">
+        点击选择会员数据表格文件
+    </div>
+    <div id="status">清洗成功，共提取 42 条数据。</div>
+</div>
+
+<script>
+    document.getElementById('upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        document.getElementById('status').innerText = "正在处理中...";
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                
+                const processed = [];
+                for(let i = 1; i < json.length; i++) {
+                    const row = json[i];
+                    // 逻辑：状态(1)为'正常'，充值(6)>0
+                    if (row[1] === '正常' && parseFloat(row[6] || 0) > 0) {
+                        processed.push({
+                            '会员账号': row[0],
+                            '账号状态': row[1],
+                            '姓名': row[2],
+                            '会员标签': row[3],
+                            '手机': row[5],
+                            '累计充值金额': row[6]
+                        });
+                    }
+                }
+
+                if (processed.length === 0) {
+                    document.getElementById('status').innerText = "未找到符合条件的数据。";
+                } else {
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(processed), "结果");
+                    XLSX.writeFile(wb, "鼎娱集团_筛选结果.xlsx");
+                    document.getElementById('status').innerText = "清洗成功，共提取 " + processed.length + " 条数据。";
+                }
+            } catch (err) {
+                document.getElementById('status').innerText = "处理出错，请检查表格格式是否正确。";
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+</script>
+
+</body></html>
